@@ -1,0 +1,12 @@
+{
+    "navbar.app.name": "goits",
+    "navbar.app.description": "go iş takip sistemi",
+
+    "navbar.title.Home": "Ana Sayfa",
+    "navbar.title.Projects": "Projeler",
+    "navbar.title.Help": "Yardım",
+    "navbar.title.About": "Hakkında",
+
+    "statusbar.button.login" : "Giriş",
+    "statusbar.button.signup" : "Kaydol"
+}

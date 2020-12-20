@@ -1,0 +1,57 @@
+{
+    "app": {
+        "name" : "goits",
+        "description" : "go issue tracking service"
+    },
+
+    "navbar" : {
+        "title" : {
+            "Home": "Home",
+            "Projects": "Projects",
+            "Help": "Help",
+            "About": "About"
+        }
+    },
+
+    "statusbar" : {
+        "button" : {
+            "login" : "Login",
+            "signup" : "Sign Up"
+        }
+    },
+
+    "form" : {
+        "button" : {
+            "submit" : "Submit",
+            "reset" : "Reset"
+        },
+
+        "label" : {
+            "id": "Id",
+            "username" : "UserName",
+            "password" : "Password"
+        }
+    },
+
+    "table": {
+        "headers" : {
+            "actions" : "Actions"
+        }
+    },
+
+    "project" : {
+        "form" : {
+            "label" : {
+                "id" : "Project Id",
+                "name" : "Project Name"
+            }
+        },
+
+        "table": {
+            "headers" : {
+                "id" : "Project Id",
+                "name": "Project Name"
+            }
+        }
+    }
+}

@@ -1,0 +1,4 @@
+node_modules
+.nuxt
+.nyc_output
+yarn.lock

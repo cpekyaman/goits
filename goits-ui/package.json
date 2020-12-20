@@ -1,0 +1,26 @@
+{
+  "name": "goits-ui",
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "start": "nuxt start",
+    "test:unit": "cross-env TEST=unit nyc ava --config ava.config.cjs ./test/specs/**/*",
+    "test:unit:watch": "cross-env TEST=unit nyc ava --config ava.config.cjs --watch",
+    "test:e2e": "cross-env TEST=e2e ava --config ava.config.cjs ./test/e2e/**/*",
+    "test": "npm run test:unit & npm run test:e2e"
+  },
+  "dependencies": {
+    "@nuxtjs/axios": "^5.12.2",
+    "@nuxtjs/proxy": "^2.0.1",
+    "nuxt": "^2.14.6",
+    "nuxt-i18n": "^6.15.4"
+  },
+  "devDependencies": {
+    "@nuxtjs/vuetify": "^1.11.2",
+    "ava": "^3.13.0",
+    "cross-env": "^7.0.2",
+    "jsdom": "^16.4.0",
+    "nyc": "^15.1.0"
+  }
+}

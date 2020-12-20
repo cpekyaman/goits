@@ -1,0 +1,25 @@
+# http server configuration
+http:
+  host: "localhost"
+  port: 8080
+  readTimeout: 10
+  writeTimeout: 20
+
+# database layer configuration
+db:
+  server:
+    host: "localhost"
+    port: 5432
+    username: "goits"
+    password: "goits"
+    dbname: "goits"
+  conn:
+    maxOpen: 20
+    maxIdle: 5
+    lifeTime: 600
+  migrations:
+    platform: "postgres"
+    schema: "public"
+    table: "db_migrations"
+    dialect: "postgres"
+    dir: "scripts/db/migrations/"
