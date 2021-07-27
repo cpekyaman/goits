@@ -1,11 +1,21 @@
 package validation
 
 import (
-	"errors"
 	"reflect"
 )
 
-var notAStructErr = errors.New("validation: not a struct")
+// contextValidationProvider is the implementation ValidationProvider which uses ValidationContext object to perform validations.
+type contextValidationProvider struct{}
+
+// ValidateStruct tries to create a new ValidationContext for the given type and performs validation checks.
+func (this contextValidationProvider) ValidateStruct(typeName string, entity interface{}) error {
+	vc, ok := GetContext(typeName)
+	if !ok {
+		return nil
+	}
+
+	return vc.ValidateStruct(entity)
+}
 
 // GetContext creates a new ValidationContext for typeName if the type as validations.
 func GetContext(typeName string) (*ValidationContext, bool) {
@@ -32,15 +42,6 @@ type ValidationContext struct {
 	sv    *StructValidation
 	oe    *ObjectError
 	valid bool
-}
-
-func ValidateStruct(typeName string, entity interface{}) error {
-	vc, ok := GetContext(typeName)
-	if !ok {
-		return nil
-	}
-
-	return vc.ValidateStruct(entity)
 }
 
 // ValidateStruct ıterates over the fields of given struct via reflection and validates them.

@@ -99,6 +99,7 @@ func Register(r *chi.Mux, resource ApiResource) {
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", MonitoredHandler(resource.name, "getById", resource.GetById))
 			r.Put("/", MonitoredHandler(resource.name, "update", resource.Update))
+			r.Delete("/", MonitoredHandler(resource.name, "delete", resource.Delete))
 		})
 	})
 }

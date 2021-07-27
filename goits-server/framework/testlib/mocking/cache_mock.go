@@ -33,18 +33,32 @@ func (m *MockCacheProvider) EXPECT() *MockCacheProviderMockRecorder {
 	return m.recorder
 }
 
-// NewCache mocks base method
-func (m *MockCacheProvider) NewCache(config caching.CacheConfig) caching.Cache {
+// NamedCache mocks base method
+func (m *MockCacheProvider) NamedCache(name string) caching.Cache {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewCache", config)
+	ret := m.ctrl.Call(m, "NamedCache", name)
 	ret0, _ := ret[0].(caching.Cache)
 	return ret0
 }
 
-// NewCache indicates an expected call of NewCache
-func (mr *MockCacheProviderMockRecorder) NewCache(config interface{}) *gomock.Call {
+// NamedCache indicates an expected call of NamedCache
+func (mr *MockCacheProviderMockRecorder) NamedCache(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCache", reflect.TypeOf((*MockCacheProvider)(nil).NewCache), config)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamedCache", reflect.TypeOf((*MockCacheProvider)(nil).NamedCache), name)
+}
+
+// CustomCache mocks base method
+func (m *MockCacheProvider) CustomCache(config caching.CacheConfig) caching.Cache {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomCache", config)
+	ret0, _ := ret[0].(caching.Cache)
+	return ret0
+}
+
+// CustomCache indicates an expected call of CustomCache
+func (mr *MockCacheProviderMockRecorder) CustomCache(config interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomCache", reflect.TypeOf((*MockCacheProvider)(nil).CustomCache), config)
 }
 
 // MockCache is a mock of Cache interface

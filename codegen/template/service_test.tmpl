@@ -1,0 +1,23 @@
+package {{.Module}}
+
+import (
+	"database/sql/driver"
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/cpekyaman/goits/framework/caching"
+	"github.com/cpekyaman/goits/framework/testlib"
+	"github.com/cpekyaman/goits/framework/validation"
+)
+
+var st *testlib.ServiceTest
+
+func init() {
+	st = testlib.NewServiceTest({{.LName}}ED).
+		WithDbMetaData(testlib.DBMetaData{Columns: []string{"id"}}).
+		WithFactory(func(c caching.Cache, vp validation.ValidationProvider) interface{} {
+			return new{{.Name}}Service(new{{.Name}}Repository(), c, vp)
+		})
+}

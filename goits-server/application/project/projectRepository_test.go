@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/cpekyaman/goits/framework/orm"
+	"github.com/cpekyaman/goits/framework/orm/repository"
 	"github.com/cpekyaman/goits/framework/testlib"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,25 +17,23 @@ var readerTest *testlib.ReaderRepositoryTest
 var writerTest *testlib.WriterRepositoryTest
 
 func init() {
-	readerTest = testlib.NewReaderRepositoryTest().
+	readerTest = testlib.NewReaderRepositoryTest(projectED).
 		WithDbMetaData(testlib.DBMetaData{Columns: []string{"id", "name"}}).
-		WithEntity(projectED).
-		WithInstanceFactory(func() orm.ReaderRepository { return newProjectRepository() })
+		WithInstanceFactory(func() repository.ReaderRepository { return newProjectRepository() })
 
-	writerTest = testlib.NewWriterRepositoryTest().
-		WithEntity(projectED).
-		WithInstanceFactory(func() orm.WriterRepository { return newProjectRepository() })
+	writerTest = testlib.NewWriterRepositoryTest(projectED).
+		WithInstanceFactory(func() repository.WriterRepository { return newProjectRepository() })
 }
 
-func TestFindById_DataFound(t *testing.T) {
+func TestRepo_Project_FindById_DataFound(t *testing.T) {
 	id := uint64(1)
 
 	context := testlib.NewTestContext().
 		WithValue(&Project{}).
-		DbMockWith(func(r *sqlmock.Rows) {
+		WithRowMock(func(r *sqlmock.Rows) {
 			r.AddRow(id, "test project")
 		}).
-		AssertWith(func(t *testing.T, result testlib.TestResult) {
+		WithAsserter(func(t *testing.T, result testlib.TestResult) {
 			prj, ok := result.RawResult.(*Project)
 			assert.True(t, ok, "not a project")
 
@@ -46,10 +44,10 @@ func TestFindById_DataFound(t *testing.T) {
 	readerTest.FindById_DataFound(t, context)
 }
 
-func TestFindById_NoDataFound(t *testing.T) {
+func TestRepo_Project_FindById_NoDataFound(t *testing.T) {
 	context := testlib.NewTestContext().
 		WithValue(&Project{}).
-		AssertWith(func(t *testing.T, result testlib.TestResult) {
+		WithAsserter(func(t *testing.T, result testlib.TestResult) {
 			prj, ok := result.RawResult.(*Project)
 			assert.True(t, ok, "not a project")
 
@@ -60,27 +58,76 @@ func TestFindById_NoDataFound(t *testing.T) {
 	readerTest.FindById_NoDataFound(t, context)
 }
 
-func TestFindById_Error(t *testing.T) {
+func TestRepo_Project_FindById_Error(t *testing.T) {
 	id := uint64(1)
 
 	context := testlib.NewTestContext().
 		WithValue(&Project{}).
-		DbMockWith(func(rows *sqlmock.Rows) {
+		WithRowMock(func(rows *sqlmock.Rows) {
 			rows.AddRow(id, 8)
 		})
 
 	readerTest.FindById_Error(t, context)
 }
 
-func TestFindAll_DataFound(t *testing.T) {
+func TestRepo_Project_FindByAttribute_DataFound(t *testing.T) {
+	id := uint64(2)
+	name := "Demo"
+
+	context := testlib.NewTestContext().
+		WithValue(&Project{}).
+		WithRowMock(func(r *sqlmock.Rows) {
+			r.AddRow(id, name)
+		}).
+		WithAsserter(func(t *testing.T, result testlib.TestResult) {
+			prj, ok := result.RawResult.(*Project)
+			assert.True(t, ok, "not a project")
+
+			assert.Equal(t, id, prj.Id, "id is not correct")
+			assert.Equal(t, name, prj.Name, "name is not correct")
+		})
+
+	readerTest.FindByAttribute_DataFound(t, context, "Name", name)
+}
+
+func TestRepo_Project_FindByAttribute_NoDataFound(t *testing.T) {
+	name := "Demo"
+
+	context := testlib.NewTestContext().
+		WithValue(&Project{}).
+		WithAsserter(func(t *testing.T, result testlib.TestResult) {
+			prj, ok := result.RawResult.(*Project)
+			assert.True(t, ok, "not a project")
+
+			assert.Equal(t, uint64(0), prj.Id, "should not set id")
+			assert.Equal(t, "", prj.Name, "should not set name")
+		})
+
+	readerTest.FindByAttribute_NoDataFound(t, context, "Name", name)
+}
+
+func TestRepo_Project_FindByAttribute_Error(t *testing.T) {
+	id := uint64(2)
+	name := "Demo"
+
+	context := testlib.NewTestContext().
+		WithValue(&Project{}).
+		WithRowMock(func(rows *sqlmock.Rows) {
+			rows.AddRow(id, name)
+		})
+
+	readerTest.FindByAttribute_Error(t, context, "Name", name)
+}
+
+func TestRepo_Project_FindAll_DataFound(t *testing.T) {
 	context := testlib.NewTestContext().
 		WithValue(&[]Project{}).
-		DbMockWith(func(rows *sqlmock.Rows) {
+		WithRowMock(func(rows *sqlmock.Rows) {
 			rows.AddRow(1, "first project")
 			rows.AddRow(2, "second project")
 			rows.AddRow(3, "third project")
 		}).
-		AssertWith(func(t *testing.T, result testlib.TestResult) {
+		WithAsserter(func(t *testing.T, result testlib.TestResult) {
 			pp, ok := result.RawResult.(*[]Project)
 			assert.True(t, ok, "not a project slice")
 			projects := *pp
@@ -94,14 +141,14 @@ func TestFindAll_DataFound(t *testing.T) {
 	readerTest.FindAll_DataFound(t, context)
 }
 
-func TestFindAll_NoDataFound(t *testing.T) {
+func TestRepo_Project_FindAll_NoDataFound(t *testing.T) {
 	readerTest.FindAll_NoDataFound(t, &[]Project{})
 }
 
-func TestFindAll_Error(t *testing.T) {
+func TestRepo_Project_FindAll_Error(t *testing.T) {
 	context := testlib.NewTestContext().
 		WithValue(&[]Project{}).
-		DbMockWith(func(rows *sqlmock.Rows) {
+		WithRowMock(func(rows *sqlmock.Rows) {
 			rows.AddRow(1, "first project")
 			rows.AddRow(2, "second project")
 			rows.AddRow(3, "third project")
@@ -110,21 +157,21 @@ func TestFindAll_Error(t *testing.T) {
 	readerTest.FindAll_Error(t, context)
 }
 
-func TestCreate_Error(t *testing.T) {
+func TestRepo_Project_Create_Error(t *testing.T) {
 	context := testlib.NewTestContext().
 		WithValue(newDummyProject())
 
 	writerTest.Create_Error(t, context)
 }
 
-func TestCreate_Success(t *testing.T) {
+func TestRepo_Project_Create_Success(t *testing.T) {
 	context := testlib.NewTestContext().
 		WithValue(newDummyProject())
 
 	writerTest.Create_Success(t, context)
 }
 
-func TestUpdate_Error(t *testing.T) {
+func TestRepo_Project_Update_Error(t *testing.T) {
 	prj := newDummyProject()
 	prj.Id = uint64(100)
 
@@ -133,7 +180,7 @@ func TestUpdate_Error(t *testing.T) {
 	writerTest.Update_Error(t, context)
 }
 
-func TestUpdate_Success(t *testing.T) {
+func TestRepo_Project_Update_Success(t *testing.T) {
 	prj := newDummyProject()
 	prj.Id = uint64(100)
 

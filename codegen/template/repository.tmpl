@@ -1,0 +1,34 @@
+package {{.Module}}
+
+import (
+	"github.com/cpekyaman/goits/framework/orm/repository"
+	"github.com/cpekyaman/goits/framework/orm/metadata"
+	"github.com/cpekyaman/goits/framework/orm/domain"
+)
+
+{{range .Types}}
+var {{.LName}}ED metadata.EntityDef
+{{end}}
+
+func initRepository() {
+	domain.RegisterEntityConfig("{{.Module}}")
+
+    {{range .Types}}
+    {{.LName}}ED = domain.EntityDefByName({{.LName}}TypeName)
+    {{end}}
+}
+
+{{range .Types}}
+////
+// Repository types for {{.Name}}
+////
+type {{.Name}}Repository interface {
+	repository.Repository
+}
+type {{.LName}}SqlRepository struct {
+	repository.SqlRepository
+}
+func new{{.Name}}Repository() {{.Name}}Repository {
+	return {{.LName}}SqlRepository{repository.NewRepository({{.LName}}ED, &{{.Name}}{})}
+}
+{{end}}

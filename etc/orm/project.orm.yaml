@@ -1,0 +1,23 @@
+ProjectStatus:
+  name: "project.ProjectStatus"
+  schema: "config"
+  table: "project_status"
+  pkcolumn: "id"
+  defaultSort: "name asc"
+  softDelete: false
+
+ProjectType:
+  name: "project.ProjectType"
+  schema: "config"
+  table: "project_type"
+  pkcolumn: "id"
+  defaultSort: "name asc"
+  softDelete: false
+
+Project:
+  name: "project.Project"
+  schema: "data"
+  table: "project"
+  pkcolumn: "id"
+  defaultSort: "name asc"
+  softDelete: false

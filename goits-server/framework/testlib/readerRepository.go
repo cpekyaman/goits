@@ -3,24 +3,22 @@ package testlib
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/cpekyaman/goits/framework/orm"
+	"github.com/cpekyaman/goits/framework/orm/metadata"
+	"github.com/cpekyaman/goits/framework/orm/repository"
+	"github.com/cpekyaman/goits/framework/testlib/assertions"
+	"github.com/cpekyaman/goits/framework/testlib/mocking"
 	"github.com/stretchr/testify/assert"
 )
 
 type ReaderRepositoryTest struct {
-	entityDef         orm.EntityDef
+	entityDef         metadata.EntityDef
 	metaData          DBMetaData
 	repositoryFactory ReaderRepositoryFactory
-}
-
-func (this *ReaderRepositoryTest) WithEntity(ed orm.EntityDef) *ReaderRepositoryTest {
-	this.entityDef = ed
-	return this
+	mocker            mocking.QueryMocker
 }
 
 func (this *ReaderRepositoryTest) WithDbMetaData(md DBMetaData) *ReaderRepositoryTest {
@@ -28,25 +26,32 @@ func (this *ReaderRepositoryTest) WithDbMetaData(md DBMetaData) *ReaderRepositor
 	return this
 }
 
-func (this *ReaderRepositoryTest) WithInstanceFactory(rf func() orm.ReaderRepository) *ReaderRepositoryTest {
+func (this *ReaderRepositoryTest) WithInstanceFactory(rf func() repository.ReaderRepository) *ReaderRepositoryTest {
 	this.repositoryFactory = ReaderRepositoryFactoryFunc(rf)
 	return this
 }
 
 type ReaderRepositoryFactory interface {
-	New() orm.ReaderRepository
+	New() repository.ReaderRepository
 }
 
-type ReaderRepositoryFactoryFunc func() orm.ReaderRepository
+type ReaderRepositoryFactoryFunc func() repository.ReaderRepository
 
-func (this ReaderRepositoryFactoryFunc) New() orm.ReaderRepository {
+func (this ReaderRepositoryFactoryFunc) New() repository.ReaderRepository {
 	return this()
 }
 
 // creates a new service test wrapper for given name
-func NewReaderRepositoryTest() *ReaderRepositoryTest {
-	return &ReaderRepositoryTest{}
+func NewReaderRepositoryTest(ed metadata.EntityDef) *ReaderRepositoryTest {
+	return &ReaderRepositoryTest{
+		entityDef: ed,
+		mocker:    mocking.NewQueryMocker(ed),
+	}
 }
+
+//////////////////////
+// Tests For FindOneById
+//////////////////////
 
 func (this ReaderRepositoryTest) FindById_DataFound(t *testing.T, tc *TestContext) {
 	// given
@@ -65,6 +70,7 @@ func (this ReaderRepositoryTest) FindById_DataFound(t *testing.T, tc *TestContex
 }
 
 func (this ReaderRepositoryTest) FindById_NoDataFound(t *testing.T, tc *TestContext) {
+	// given
 	repo, mock := this.NewRepoWithMock(t)
 
 	findOneId := uint64(4)
@@ -75,7 +81,6 @@ func (this ReaderRepositoryTest) FindById_NoDataFound(t *testing.T, tc *TestCont
 
 	// then
 	assert.NotNil(t, err, "should get back an error")
-	fmt.Println(err.Error())
 	assert.True(t, strings.Contains(err.Error(), "no rows"), fmt.Sprintf("unexpected error: %v", err))
 	tc.asserter.Assert(t, TestResult{tc.valueHolder, err})
 }
@@ -85,17 +90,67 @@ func (this ReaderRepositoryTest) FindById_Error(t *testing.T, tc *TestContext) {
 	repo, mock := this.NewRepoWithMock(t)
 
 	findOneId := uint64(4)
-	eq, rows := this.MockFindOneWithRows(findOneId, mock)
-	eq.WillReturnError(fmt.Errorf("for test"))
-	tc.rowMocker.Mock(rows)
+	this.mocker.ExpectFindOne(mock).WillReturnError(mocking.SqlError)
 
 	// when
 	err := repo.FindOneById(context.Background(), tc.valueHolder, findOneId)
 
 	// then
 	assert.NotNil(t, err, "should get back an error")
-	assert.True(t, strings.Contains(err.Error(), "for test"), "unexpected error")
+	assert.Equal(t, mocking.SqlError, err, "unexpected error")
 }
+
+//////////////////////
+// Tests For FindOneByAttribute
+//////////////////////
+
+func (this ReaderRepositoryTest) FindByAttribute_DataFound(t *testing.T, tc *TestContext, attr string, attrVal interface{}) {
+	// given
+	repo, mock := this.NewRepoWithMock(t)
+
+	_, rows := this.MockFindOneByAttributeWithRows(attr, attrVal, mock)
+	tc.rowMocker.Mock(rows)
+
+	// when
+	err := repo.FindOneByAttribute(context.Background(), tc.valueHolder, attr, attrVal)
+
+	// then
+	assert.Nil(t, err, err)
+	tc.asserter.Assert(t, TestResult{tc.valueHolder, err})
+}
+
+func (this ReaderRepositoryTest) FindByAttribute_NoDataFound(t *testing.T, tc *TestContext, attr string, attrVal interface{}) {
+	// given
+	repo, mock := this.NewRepoWithMock(t)
+
+	this.MockFindOneByAttributeWithRows(attr, attrVal, mock)
+
+	// when
+	err := repo.FindOneByAttribute(context.Background(), tc.valueHolder, attr, attrVal)
+
+	// then
+	assert.NotNil(t, err, "should get back an error")
+	assert.True(t, strings.Contains(err.Error(), "no rows"), fmt.Sprintf("unexpected error: %v", err))
+	tc.asserter.Assert(t, TestResult{tc.valueHolder, err})
+}
+
+func (this ReaderRepositoryTest) FindByAttribute_Error(t *testing.T, tc *TestContext, attr string, attrVal interface{}) {
+	// given
+	repo, mock := this.NewRepoWithMock(t)
+
+	this.mocker.ExpectFindOneByAttr(mock, attr).WillReturnError(mocking.SqlError)
+
+	// when
+	err := repo.FindOneByAttribute(context.Background(), tc.valueHolder, attr, attrVal)
+
+	// then
+	assert.NotNil(t, err, "should get back an error")
+	assert.Equal(t, mocking.SqlError, err, "unexpected error")
+}
+
+//////////////////////
+// Tests For FindAll
+//////////////////////
 
 func (this ReaderRepositoryTest) FindAll_DataFound(t *testing.T, tc *TestContext) {
 	// given
@@ -123,7 +178,7 @@ func (this ReaderRepositoryTest) FindAll_NoDataFound(t *testing.T, valueHolder i
 
 	// then
 	assert.Nil(t, err, "should not get an error")
-	this.verifyArrayPtrEmpty(t, valueHolder)
+	assertions.ArrayEmpty(t, valueHolder)
 }
 
 func (this ReaderRepositoryTest) FindAll_Error(t *testing.T, tc *TestContext) {
@@ -140,41 +195,58 @@ func (this ReaderRepositoryTest) FindAll_Error(t *testing.T, tc *TestContext) {
 	// then
 	assert.NotNil(t, err, "should not back get error")
 	assert.True(t, strings.Contains(err.Error(), "for test"), "unexpected error")
-	this.verifyArrayPtrEmpty(t, tc.valueHolder)
+	assertions.ArrayEmpty(t, tc.valueHolder)
 }
 
-func (this ReaderRepositoryTest) verifyArrayPtrEmpty(t *testing.T, valueHolder interface{}) {
-	arrPtr := reflect.ValueOf(valueHolder)
-	assert.Equal(t, reflect.Ptr, arrPtr.Kind(), "not a pointer")
+//////////////////////
+// Tests For FindAllByAttributes
+//////////////////////
 
-	arrElem := arrPtr.Elem()
-	switch reflect.TypeOf(arrElem.Interface()).Kind() {
-	case reflect.Slice:
-		assert.Equal(t, 0, arrElem.Len(), "no rows should be returned")
-	default:
-		assert.Fail(t, "not a slice")
-	}
+func (this ReaderRepositoryTest) FindAllByAttributes_DataFound(t *testing.T, tc *TestContext) {
+	// given
+	repo, mock := this.NewRepoWithMock(t)
+
+	_, rows := this.MockFindAllWithRows(mock)
+	tc.rowMocker.Mock(rows)
+
+	// when
+	err := repo.FindAll(context.Background(), tc.valueHolder)
+
+	// then
+	assert.Nil(t, err, "should not get error")
+	tc.asserter.Assert(t, TestResult{tc.valueHolder, nil})
 }
+
+//////////////////////
+// Mock Helpers
+//////////////////////
 
 func (this ReaderRepositoryTest) MockFindOneWithRows(id uint64, mock sqlmock.Sqlmock) (*sqlmock.ExpectedQuery, *sqlmock.Rows) {
-	eq, rows := this.MockFinderWithRows("select \\* from "+this.entityDef.TableName()+" where "+this.entityDef.PKColumn()+" = \\$1", mock)
+	eq, rows := this.mocker.ExpectQueryWithRows(this.mocker.ExpectFindOne(mock), this.metaData.Columns)
 	eq.WithArgs(id)
 	return eq, rows
 }
 
 func (this ReaderRepositoryTest) MockFindAllWithRows(mock sqlmock.Sqlmock) (*sqlmock.ExpectedQuery, *sqlmock.Rows) {
-	eq, rows := this.MockFinderWithRows("select \\* from "+this.entityDef.TableName()+" order by "+this.entityDef.DefaultSort(), mock)
+	eq, rows := this.mocker.ExpectQueryWithRows(this.mocker.ExpectFindAll(mock), this.metaData.Columns)
 	return eq, rows
 }
 
-func (this ReaderRepositoryTest) MockFinderWithRows(queryRegex string, mock sqlmock.Sqlmock) (*sqlmock.ExpectedQuery, *sqlmock.Rows) {
-	rows := sqlmock.NewRows(this.metaData.Columns)
-	eq := mock.ExpectQuery(queryRegex).WillReturnRows(rows)
+func (this ReaderRepositoryTest) MockFindOneByAttributeWithRows(attr string, attrVal interface{}, mock sqlmock.Sqlmock) (*sqlmock.ExpectedQuery, *sqlmock.Rows) {
+	eq, rows := this.mocker.ExpectQueryWithRows(this.mocker.ExpectFindOneByAttr(mock, attr), this.metaData.Columns)
+	eq.WithArgs(attrVal)
 	return eq, rows
 }
 
-func (this ReaderRepositoryTest) NewRepoWithMock(t *testing.T) (orm.ReaderRepository, sqlmock.Sqlmock) {
-	mock := NewSqlMock(t)
+func (this ReaderRepositoryTest) MockFindAllByAttributesWithRows(attrs map[string]interface{}, mock sqlmock.Sqlmock) (*sqlmock.ExpectedQuery, *sqlmock.Rows) {
+	eq, params := this.mocker.ExpectFindAllByAttributes(mock, attrs)
+	eq, rows := this.mocker.ExpectQueryWithRows(eq, this.metaData.Columns)
+	eq.WithArgs(params...)
+	return eq, rows
+}
+
+func (this ReaderRepositoryTest) NewRepoWithMock(t *testing.T) (repository.ReaderRepository, sqlmock.Sqlmock) {
+	mock := mocking.NewSqlMock(t)
 	repo := this.repositoryFactory.New()
 	return repo, mock
 }

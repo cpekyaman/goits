@@ -1,5 +1,14 @@
 package validation
 
+func ValidId() validatorImpl {
+	return validatorImpl{
+		name: "validId",
+		vFunc: uintPredicateFunc(func(intVal uint64) bool {
+			return intVal > 0
+		}),
+	}
+}
+
 func IntMin(min int32) validatorImpl {
 	return validatorImpl{
 		name:   "min",
@@ -27,6 +36,17 @@ func IntRange(min int32, max int32) validatorImpl {
 		vFunc: intPredicateFunc(func(intVal int32) bool {
 			return min <= intVal && intVal <= max
 		}),
+	}
+}
+
+func uintPredicateFunc(pred func(uint64) bool) func(interface{}) bool {
+	return func(value interface{}) bool {
+		in := fieldValue(value)
+		intVal, ok := in.(uint64)
+		if !ok {
+			return false
+		}
+		return pred(intVal)
 	}
 }
 

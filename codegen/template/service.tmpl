@@ -1,0 +1,82 @@
+package {{.Module}}
+
+import (
+	"context"
+
+	"github.com/cpekyaman/goits/framework/caching"
+	"github.com/cpekyaman/goits/framework/services"
+	"github.com/cpekyaman/goits/framework/validation"
+)
+
+// {{.Name}}Service is the interface to be exposed to other packages when needed.
+type {{.Name}}Service interface {
+	services.CRUDService
+}
+
+// {{.LName}}ServiceImpl is the package private implemention type for our service.
+type {{.LName}}ServiceImpl struct {
+	repo    {{.Name}}Repository
+	svcImpl services.CRUDServiceImpl
+}
+
+// newDefault{{.Name}}Service is provided for production code to create service with defaults.
+func newDefault{{.Name}}Service() {{.Name}}Service {
+	return new{{.Name}}Service(new{{.Name}}Repository(), caching.NamedCache("{{.LName}}"), validation.Provider())
+}
+
+// new{{.Name}}Service is provided to inject dependencies during construction (mainly for unit testing purposes).
+func new{{.Name}}Service(pr {{.Name}}Repository, c caching.Cache, vp validation.ValidationProvider) {{.Name}}Service {
+	return {{.LName}}ServiceImpl{pr, services.NewCRUDService(pr, c, vp)}
+}
+
+func (this {{.LName}}ServiceImpl) GetAll(ctx context.Context) (interface{}, error) {
+	var resultList []{{.Name}}
+	err := this.repo.FindAll(ctx, &resultList)
+	return resultList, err
+}
+
+func (this {{.LName}}ServiceImpl) GetAllPaged(ctx context.Context, limit uint, offset uint64) (interface{}, error) {
+	var resultList []{{.Name}}
+	err := this.repo.FindAllPaged(ctx, &resultList, limit, offset)
+	return resultList, err
+}
+
+func (this {{.LName}}ServiceImpl) GetById(ctx context.Context, id uint64) (interface{}, error) {
+	result, err := this.svcImpl.Cache().GetOrCompute(caching.IdToKey(id), func() (interface{}, error) {
+		var result {{.Name}}
+		err := this.repo.FindOneById(ctx, &result, id)
+		return &result, err
+	})
+
+	return result, err
+}
+
+func (this {{.LName}}ServiceImpl) FindOne(ctx context.Context, attr string, attrValue interface{}) (interface{}, error) {
+	var result {{.Name}}
+	err := this.repo.FindOneByAttribute(ctx, &result, attr, attrValue)
+	return result, err
+}
+
+func (this {{.LName}}ServiceImpl) FindAll(ctx context.Context, attrs map[string]interface{}) (interface{}, error) {
+	var resultList []{{.Name}}
+	err := this.repo.FindAllByAttributes(ctx, &resultList, attrs)
+	return resultList, err
+}
+
+func (this {{.LName}}ServiceImpl) FindAllPaged(ctx context.Context, attrs map[string]interface{}, limit uint, offset uint64) (interface{}, error) {
+	var resultList []{{.Name}}
+	err := this.repo.FindAllByAttributesPaged(ctx, &resultList, attrs, limit, offset)
+	return resultList, err
+}
+
+func (this {{.LName}}ServiceImpl) Create(ctx context.Context, binding services.ObjectBinder) error {
+	return this.svcImpl.Create(ctx, binding, {{.LName}}TypeName, &{{.Name}}{})
+}
+
+func (this {{.LName}}ServiceImpl) Update(ctx context.Context, id uint64, binding services.ObjectBinder) error {
+	return this.svcImpl.Update(ctx, id, binding, {{.LName}}TypeName, &{{.Name}}{})
+}
+
+func (this {{.LName}}ServiceImpl) Delete(ctx context.Context, id uint64) error {
+	return this.svcImpl.Delete(ctx, id)
+}

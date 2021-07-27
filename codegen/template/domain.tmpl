@@ -1,0 +1,36 @@
+package {{.Module}}
+
+import (
+	"github.com/cpekyaman/goits/framework/orm/domain"
+	"github.com/cpekyaman/goits/framework/validation"
+)
+
+const (
+{{range .Types -}}
+	{{.LName}}TypeName = "{{$.Module}}.{{.Name}}"
+{{end -}}
+)
+
+func initDomain() {
+{{range .Types -}}
+	register{{.Name}}Validations()
+{{end -}}
+}
+
+{{range .Types -}}
+////
+// Domain concepts for {{.Name}}
+////
+type {{.Name}} struct {
+	domain.{{.Base}}
+}
+func register{{.Name}}Validations() {
+	// TODO: required field validations should be added.
+	sv := validation.Struct({{.LName}}TypeName)
+}
+func New{{.Name}}() *{{.Name}} {
+	// TODO: fill in required initial values if needed.
+	return &{{.Name}} {domain.{{.Base}}{} }
+}
+{{end -}}
+

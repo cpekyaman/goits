@@ -2,73 +2,73 @@ package testlib
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/cpekyaman/goits/framework/orm"
+	"github.com/cpekyaman/goits/framework/orm/metadata"
+	"github.com/cpekyaman/goits/framework/orm/repository"
+	"github.com/cpekyaman/goits/framework/orm/domain"
+	"github.com/cpekyaman/goits/framework/testlib/mocking"
 	"github.com/stretchr/testify/assert"
 )
 
 type WriterRepositoryTest struct {
-	entityDef         orm.EntityDef
+	entityDef         metadata.EntityDef
+	qm                mocking.QueryMocker
 	repositoryFactory WriterRepositoryFactory
 }
 
-func (this *WriterRepositoryTest) WithEntity(ed orm.EntityDef) *WriterRepositoryTest {
-	this.entityDef = ed
-	return this
-}
-
-func (this *WriterRepositoryTest) WithInstanceFactory(rf func() orm.WriterRepository) *WriterRepositoryTest {
+func (this *WriterRepositoryTest) WithInstanceFactory(rf func() repository.WriterRepository) *WriterRepositoryTest {
 	this.repositoryFactory = WriterRepositoryFactoryFunc(rf)
 	return this
 }
 
 // creates a new service test wrapper for given name
-func NewWriterRepositoryTest() *WriterRepositoryTest {
-	return &WriterRepositoryTest{}
+func NewWriterRepositoryTest(ed metadata.EntityDef) *WriterRepositoryTest {
+	return &WriterRepositoryTest{
+		entityDef: ed,
+		qm:        mocking.NewQueryMocker(ed),
+	}
 }
 
 type WriterRepositoryFactory interface {
-	New() orm.WriterRepository
+	New() repository.WriterRepository
 }
 
-type WriterRepositoryFactoryFunc func() orm.WriterRepository
+type WriterRepositoryFactoryFunc func() repository.WriterRepository
 
-func (this WriterRepositoryFactoryFunc) New() orm.WriterRepository {
+func (this WriterRepositoryFactoryFunc) New() repository.WriterRepository {
 	return this()
 }
+
+//////////////////////
+// Tests For Create
+//////////////////////
 
 func (this WriterRepositoryTest) Create_Error(t *testing.T, tc *TestContext) {
 	// given
 	repo, mock := this.NewRepoWithMock(t)
-	entity, ok := tc.valueHolder.(orm.Entity)
+	entity, ok := tc.valueHolder.(domain.Entity)
 	assert.True(t, ok, "value holder is not an entity")
 	assert.Equal(t, uint64(0), entity.GetId(), "entity id is non-zero")
 
-	mock.
-		ExpectExec("insert into " + this.entityDef.TableName() + "(.*) values (.*)").
-		WillReturnError(fmt.Errorf("could not insert"))
+	this.qm.ExpectInsertError(mock)
 
 	// when
 	err := repo.Save(context.Background(), entity)
 
 	// then
-	assert.NotNil(t, err, "expected error to be returned")
-	assert.Equal(t, "could not insert", err.Error(), "error message is not correct")
+	assert.Equal(t, mocking.SqlError, err, "error is not correct")
 }
 
 func (this WriterRepositoryTest) Create_Success(t *testing.T, tc *TestContext) {
 	// given
 	repo, mock := this.NewRepoWithMock(t)
-	entity, ok := tc.valueHolder.(orm.Entity)
+	entity, ok := tc.valueHolder.(domain.Entity)
 	assert.True(t, ok, "value holder is not an entity")
 	assert.Equal(t, uint64(0), entity.GetId(), "entity id is non-zero")
 
-	mock.
-		ExpectExec("insert into " + this.entityDef.TableName() + "(.*) values (.*)").
-		WillReturnResult(sqlmock.NewResult(100, 1))
+	this.qm.ExpectInsert(mock, 100)
 
 	// when
 	err := repo.Save(context.Background(), entity)
@@ -77,61 +77,48 @@ func (this WriterRepositoryTest) Create_Success(t *testing.T, tc *TestContext) {
 	assert.Nil(t, err, "no error expected")
 }
 
+//////////////////////
+// Tests For Update
+//////////////////////
+
 func (this WriterRepositoryTest) Update_Error(t *testing.T, tc *TestContext) {
 	// given
 	repo, mock := this.NewRepoWithMock(t)
-	entity, ok := tc.valueHolder.(orm.Entity)
+	entity, ok := tc.valueHolder.(domain.Entity)
 	assert.True(t, ok, "value holder is not an entity")
 	assert.True(t, entity.GetId() > 0, "entity id is zero")
 
-	var q string
-	_, ok = tc.valueHolder.(orm.Versioned)
-	if ok {
-		q = "update " + this.entityDef.TableName() + " set .* where id=\\? AND version=\\?"
-	} else {
-		q = "update " + this.entityDef.TableName() + " set .* where id=\\?"
-	}
-
-	mock.
-		ExpectExec(q).
-		WillReturnResult(sqlmock.NewResult(0, 1))
+	this.qm.ExpectUpdateError(mock, tc.valueHolder)
 
 	// when
 	err := repo.Save(context.Background(), entity)
 
 	// then
-	assert.Nil(t, err, "no error expected")
+	assert.Equal(t, mocking.SqlError, err, "error is not correct")
 }
 
 func (this WriterRepositoryTest) Update_Success(t *testing.T, tc *TestContext) {
 	// given
 	repo, mock := this.NewRepoWithMock(t)
-	entity, ok := tc.valueHolder.(orm.Entity)
+	entity, ok := tc.valueHolder.(domain.Entity)
 	assert.True(t, ok, "value holder is not an entity")
 	assert.True(t, entity.GetId() > 0, "entity id is zero")
 
-	var q string
-	_, ok = tc.valueHolder.(orm.Versioned)
-	if ok {
-		q = "update " + this.entityDef.TableName() + " set .* where id=\\? AND version=\\?"
-	} else {
-		q = "update " + this.entityDef.TableName() + " set .* where id=\\?"
-	}
-
-	mock.
-		ExpectExec(q).
-		WillReturnError(fmt.Errorf("could not update"))
+	this.qm.ExpectUpdate(mock, tc.valueHolder)
 
 	// when
 	err := repo.Save(context.Background(), entity)
 
 	// then
-	assert.NotNil(t, err, "expected error to be returned")
-	assert.Equal(t, "could not update", err.Error(), "error message is not correct")
+	assert.Nil(t, err, "no error expected")
 }
 
-func (this WriterRepositoryTest) NewRepoWithMock(t *testing.T) (orm.WriterRepository, sqlmock.Sqlmock) {
-	mock := NewSqlMock(t)
+//////////////////////
+// Mock Helpers
+//////////////////////
+
+func (this WriterRepositoryTest) NewRepoWithMock(t *testing.T) (repository.WriterRepository, sqlmock.Sqlmock) {
+	mock := mocking.NewSqlMock(t)
 	repo := this.repositoryFactory.New()
 	return repo, mock
 }

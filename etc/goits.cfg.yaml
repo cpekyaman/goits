@@ -23,3 +23,14 @@ db:
     table: "db_migrations"
     dialect: "postgres"
     dir: "scripts/db/migrations/"
+    
+# cach layer configuration
+caching:
+  default:
+    name: "Default"
+    maxElements: 100
+    ttlSeconds: 600
+  project:
+    name: "project.Project"
+    maxElements: 100
+    ttlSeconds: 900

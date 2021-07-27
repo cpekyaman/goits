@@ -1,80 +1,8 @@
-package orm
+package domain
 
 import (
-	"strings"
 	"time"
 )
-
-var entityMetaData map[string]*EntityDef
-var defaultNonInsertableColumns map[string]bool
-var defaultNonUpdatableColumns map[string]bool
-
-func init() {
-	entityMetaData = make(map[string]*EntityDef)
-
-	defaultNonInsertableColumns = map[string]bool{
-		"Id":               true,
-		"Version":          true,
-		"CreateTime":       true,
-		"LastModifiedTime": true,
-	}
-
-	defaultNonUpdatableColumns = map[string]bool{
-		"Id":               true,
-		"Version":          true,
-		"CreateTime":       true,
-		"LastModifiedTime": true,
-	}
-}
-
-// Returns a registered entity metadata.
-func EntityDefByName(name string) *EntityDef {
-	return entityMetaData[name]
-}
-
-// Registers a new entity metada data.
-func NewEntityDefWithDefaults(name string) EntityDef {
-	ed := EntityDef{
-		name:        name,
-		tableName:   strings.ToLower(name),
-		pkColumn:    "id",
-		defaultSort: "id desc",
-		softDelete:  false,
-	}
-	entityMetaData[name] = &ed
-	return ed
-}
-
-func NewEntityDef(name string, table string, pk string, defaultSort string, softDelete bool) EntityDef {
-	ed := EntityDef{name, table, pk, defaultSort, softDelete}
-	entityMetaData[name] = &ed
-	return ed
-}
-
-// Metadata for an entity to help buiiding queries at repository layer in a generic way.
-type EntityDef struct {
-	name        string
-	tableName   string
-	pkColumn    string
-	defaultSort string
-	softDelete  bool
-}
-
-func (this *EntityDef) Name() string {
-	return this.name
-}
-func (this *EntityDef) TableName() string {
-	return this.tableName
-}
-func (this *EntityDef) PKColumn() string {
-	return this.pkColumn
-}
-func (this *EntityDef) DefaultSort() string {
-	return this.defaultSort
-}
-func (this *EntityDef) IsSoftDelete() bool {
-	return this.softDelete
-}
 
 // Entity is the base interface for entities to implement.
 type Entity interface {

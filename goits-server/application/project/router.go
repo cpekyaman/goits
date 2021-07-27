@@ -12,7 +12,7 @@ type projectResource struct {
 var projectAPI projectResource
 
 func InitProject() {
-	projectAPI = newProjectResource(newProjectService())
+	projectAPI = newProjectResource(newDefaultProjectService())
 	projectAPI.Register()
 }
 

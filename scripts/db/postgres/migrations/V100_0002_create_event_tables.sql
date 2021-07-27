@@ -18,12 +18,15 @@ create table event.audit_event (
     id bigint not null default nextval('event.audit_event_seq'),
     reference uuid not null,
     event_type integer not null,
+    target_type varchar(50) not null,
+    target_id bigint not null,
     event_data jsonb not null,
     event_time timestamp with time zone not null default now(),
     description varchar(200) null
 );
 create unique index audit_event_id_pk on event.audit_event(id);
 create index audit_event_reference_idx on event.audit_event(reference);
+create index audit_event_target_idx on event.audit_event(target_type, target_id);
 ALTER TABLE event.audit_event
     add constraint audit_event_pk primary key using INDEX audit_event_id_pk,
     add constraint audit_event_type_fk foreign key (event_type) references config.audit_event_type(id)

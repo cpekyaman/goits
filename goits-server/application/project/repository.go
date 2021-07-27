@@ -2,23 +2,54 @@
 package project
 
 import (
-	"github.com/cpekyaman/goits/framework/orm"
+	"github.com/cpekyaman/goits/framework/orm/domain"
+	"github.com/cpekyaman/goits/framework/orm/metadata"
+	"github.com/cpekyaman/goits/framework/orm/repository"
 )
 
-var projectED orm.EntityDef
+var projectStatusED metadata.EntityDef
+var projectTypeED metadata.EntityDef
+var projectED metadata.EntityDef
 
 func init() {
-	projectED = orm.NewEntityDef("Project", "project", "Id", "name asc", false)
+	domain.RegisterEntityConfig("project")
+
+	projectStatusED = domain.EntityDefByName(projectStatusTypeName)
+	projectTypeED = domain.EntityDefByName(projectTypeTypeName)
+	projectED = domain.EntityDefByName(projectTypeName)
 }
 
 type ProjectRepository interface {
-	orm.Repository
+	repository.Repository
 }
-
 type projectSqlRepository struct {
-	orm.SqlRepository
+	repository.SqlRepository
 }
 
 func newProjectRepository() ProjectRepository {
-	return projectSqlRepository{orm.NewRepository(&projectED, &Project{})}
+	return projectSqlRepository{repository.NewRepository(projectED, &Project{})}
+}
+
+type ProjectTypeRepository interface {
+	repository.Repository
+}
+
+type projectTypeSqlReporsitory struct {
+	repository.SqlRepository
+}
+
+func newProjectTypeRepository() ProjectTypeRepository {
+	return projectTypeSqlReporsitory{repository.NewRepository(projectTypeED, &ProjectType{})}
+}
+
+type ProjectStatusRepository interface {
+	repository.Repository
+}
+
+type projectStatusSqlRepository struct {
+	repository.SqlRepository
+}
+
+func newProjectStatusRepository() ProjectStatusRepository {
+	return projectStatusSqlRepository{repository.NewRepository(projectStatusED, &ProjectStatus{})}
 }

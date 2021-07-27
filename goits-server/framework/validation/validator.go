@@ -1,64 +1,36 @@
+//go:generate mockgen -source=validator.go -destination=validator_mock.go -package=mocking
 package validation
 
 import (
+	"errors"
 	"reflect"
 )
 
-var validatorRegistry map[string]*StructValidation
+var notAStructErr = errors.New("validation: not a struct")
+var notInitErr = errors.New("validation: validator not initialized")
 
-func init() {
-	validatorRegistry = make(map[string]*StructValidation)
+var vp ValidationProvider
+
+func InitValidation() {
+	vp = contextValidationProvider{}
 }
 
-// Struct creates a new StructValidation for typeName and returns it for further customization.
-func Struct(typeName string) *StructValidation {
-	vl := structValidation(typeName)
-	validatorRegistry[typeName] = vl
-	return vl
+// Provider returns the default initialized ValidationProvider for the application.
+func Provider() ValidationProvider {
+	return vp
 }
 
-// structValidation is used internally to create a StructValidation without registering it.
-func structValidation(typeName string) *StructValidation {
-	return &StructValidation{
-		name:       typeName,
-		validators: make(map[string]*FieldValidation),
+// ValidationProvider provides the public interface for invoking registered validations.
+type ValidationProvider interface {
+	ValidateStruct(typeName string, entity interface{}) error
+}
+
+// ValidateStruct performs the validation of given struct instance registered under the given name.
+func ValidateStruct(typeName string, entity interface{}) error {
+	if vp != nil {
+		return vp.ValidateStruct(typeName, entity)
 	}
-}
-
-// Field creates a new FieldValidation for fieldName and returns it for further customization.
-func (this *StructValidation) Field(fieldName string) *FieldValidation {
-	fv := &FieldValidation{
-		sv:         this,
-		name:       fieldName,
-		validators: make([]Validator, 0),
-	}
-	this.validators[fieldName] = fv
-	return fv
-}
-
-// Get gets the FieldValidation instance registered for fieldName for validation purposes.
-func (this *StructValidation) Get(fieldName string) (*FieldValidation, bool) {
-	fv, ok := this.validators[fieldName]
-	return fv, ok
-}
-
-// StructValidation is the container object that stores validations registered for a type.
-type StructValidation struct {
-	name       string
-	validators map[string]*FieldValidation
-}
-
-// With adds the Validator v to list of validators to be applied to field.
-func (this *FieldValidation) With(varr ...Validator) *StructValidation {
-	this.validators = append(this.validators, varr...)
-	return this.sv
-}
-
-// FieldValidation is the container object that stores validations to be applied for a struct field.
-type FieldValidation struct {
-	sv         *StructValidation
-	name       string
-	validators []Validator
+	return notInitErr
 }
 
 // Validator is the contract that all validator implementations should satisfy.

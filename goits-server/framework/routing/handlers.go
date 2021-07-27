@@ -22,7 +22,7 @@ func (hf ApiHandlerFunc) Handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this ApiResource) GetAll(w http.ResponseWriter, r *http.Request) {
-	si, ok := this.service.(services.GetAllService)
+	si, ok := this.service.(services.ReaderService)
 	if !ok {
 		this.notImplementedResponse(w, r)
 		return
@@ -46,7 +46,7 @@ func (this ApiResource) GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this ApiResource) GetById(w http.ResponseWriter, r *http.Request) {
-	si, ok := this.service.(services.GetByIdService)
+	si, ok := this.service.(services.ReaderService)
 	if !ok {
 		this.notImplementedResponse(w, r)
 		return
@@ -67,7 +67,7 @@ func (this ApiResource) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this ApiResource) Create(w http.ResponseWriter, r *http.Request) {
-	si, ok := this.service.(services.CreateService)
+	si, ok := this.service.(services.CreatorService)
 	if !ok {
 		this.notImplementedResponse(w, r)
 		return
@@ -83,7 +83,7 @@ func (this ApiResource) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this ApiResource) Update(w http.ResponseWriter, r *http.Request) {
-	si, ok := this.service.(services.UpdateService)
+	si, ok := this.service.(services.UpdaterService)
 	if !ok {
 		this.notImplementedResponse(w, r)
 		return
@@ -99,6 +99,27 @@ func (this ApiResource) Update(w http.ResponseWriter, r *http.Request) {
 	err = si.Update(r.Context(), id, ob)
 	if err != nil {
 		this.errorResponse(w, r, "could not update resource", err)
+	} else {
+		this.successResponse(w, r, nil)
+	}
+}
+
+func (this ApiResource) Delete(w http.ResponseWriter, r *http.Request) {
+	si, ok := this.service.(services.DeleterService)
+	if !ok {
+		this.notImplementedResponse(w, r)
+		return
+	}
+
+	id, err := this.binder.IdPathParam(r, "id")
+	if err != nil {
+		this.errorResponse(w, r, "invalid input", err)
+		return
+	}
+
+	err = si.Delete(r.Context(), id)
+	if err != nil {
+		this.errorResponse(w, r, "could not delete resource", err)
 	} else {
 		this.successResponse(w, r, nil)
 	}

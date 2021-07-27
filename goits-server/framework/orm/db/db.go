@@ -1,4 +1,4 @@
-package orm
+package db
 
 import (
 	"database/sql"
@@ -31,20 +31,11 @@ type dbConfig struct {
 	Conn   connectionConfig `mapstructure:"conn"`
 }
 
-type DBW interface {
-	GetDB() *sqlx.DB
-}
-
-// thin wrapper around actual db provider
-type DBWImpl struct {
-	db *sqlx.DB
-}
-
-var dbw DBW
+var appDB *sqlx.DB
 var dbURL string
 var conf dbConfig
 
-// creates and initializes db layer of the application
+// NewDB creates and initializes db layer of the application.
 func NewDB() {
 	config.ReadInto("db", &conf)
 
@@ -63,20 +54,15 @@ func NewDB() {
 	db.DB.SetMaxIdleConns(conf.Conn.MaxIdle)
 	db.DB.SetConnMaxLifetime(conf.Conn.LifeTime * time.Second)
 
-	dbw = &DBWImpl{db: db}
+	appDB = db
 }
 
-// creates the db layer with pre-initialized db
+// WithDB creates the db layer with pre-initialized db.
 func WithDB(db *sql.DB, driverName string) {
-	dbw = &DBWImpl{db: sqlx.NewDb(db, driverName)}
+	appDB = sqlx.NewDb(db, driverName)
 }
 
-// returns the db wrapper
-func DB() DBW {
-	return dbw
-}
-
-// returns the wrapper db layer provider
-func (d *DBWImpl) GetDB() *sqlx.DB {
-	return d.db
+// DB returns the db created.
+func DB() *sqlx.DB {
+	return appDB
 }

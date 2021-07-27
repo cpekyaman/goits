@@ -4,9 +4,10 @@ GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
+GOGEN=$(GOCMD) generate
 
 # app specific parameters
-BINARY_PATH=..
+BINARY_PATH=../bin
 BINARY_NAME=goits
 ENTRY_POINT=./main/main.go
 BINARY_CMD=$(BINARY_PATH)/$(BINARY_NAME).exe
@@ -31,18 +32,25 @@ cachingTest:
 	$(GOTEST) -v $(PKG_ROOT)/framework/caching
 routingTest:
 	$(GOTEST) -v $(PKG_ROOT)/framework/routing
-frameworkTest: ormTest validationTest cachingTest
+frameworkTest: ormTest validationTest cachingTest routingTest
 
 # test tasks for application part
 projectTest:
 	$(GOTEST) -v $(PKG_ROOT)/application/project
 applicationTest: projectTest
 
+# mock generation for framework components
+svcMock:
+	$(GOGEN) "github.com/cpekyaman/goits/framework/services"
+validationMock:
+	$(GOGEN) "github.com/cpekyaman/goits/framework/valiation"
+cacheMock:
+	$(GOGEN) "github.com/cpekyaman/goits/framework/caching"
 
 # running application or application tasks
-run-db-migrate:
+run-db-migrate: build
 	$(BINARY_CMD) migrate up
-run-db-rollback:
+run-db-rollback: build
 	$(BINARY_CMD) migrate down
-run-server:
+run-server: build
 	$(BINARY_CMD) server start

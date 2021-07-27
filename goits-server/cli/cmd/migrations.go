@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/cpekyaman/goits/config"
-	"github.com/cpekyaman/goits/framework/orm"
+	"github.com/cpekyaman/goits/framework/orm/db"
 	migrate "github.com/rubenv/sql-migrate"
 )
 
@@ -65,7 +65,7 @@ func dbMigrate(direction migrate.MigrationDirection) {
 	}
 
 	log.Printf("Applying migrations for %v\n", direction)
-	n, err := ms.Exec(orm.DB().GetDB().DB, mconf.Migrations.Dialect, migrations, direction)
+	n, err := ms.Exec(db.DB().DB, mconf.Migrations.Dialect, migrations, direction)
 	if err != nil {
 		log.Fatal("Could not execute migrations : ", err)
 	}

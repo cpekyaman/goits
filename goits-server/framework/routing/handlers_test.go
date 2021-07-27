@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/cpekyaman/goits/framework/commons"
 	"github.com/cpekyaman/goits/framework/services"
 	"github.com/cpekyaman/goits/framework/testlib/mocking"
+	"github.com/cpekyaman/goits/framework/testlib/matchers"
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -46,18 +46,18 @@ func TestGetAll_NotImplemented(t *testing.T) {
 }
 
 func TestGetAll_Error(t *testing.T) {
-	getAllVariant_Error(t, rootUrl+"/test", func(m *mocking.MockGetAllService) {
-		m.EXPECT().GetAll(goContextMatcher()).Return(nil, fmt.Errorf("service error"))
+	getAllVariant_Error(t, rootUrl+"/test", func(m *mocking.MockReaderService) {
+		m.EXPECT().GetAll(matchers.GoContext()).Return(nil, fmt.Errorf("service error"))
 	})
 }
 
 func TestGetAll_Paged_Error(t *testing.T) {
-	getAllVariant_Error(t, rootUrl+"/test?page=2", func(m *mocking.MockGetAllService) {
-		m.EXPECT().GetAllPaged(goContextMatcher(), uint(20), uint64(20)).Return(nil, fmt.Errorf("service error"))
+	getAllVariant_Error(t, rootUrl+"/test?page=2", func(m *mocking.MockReaderService) {
+		m.EXPECT().GetAllPaged(matchers.GoContext(), uint(20), uint64(20)).Return(nil, fmt.Errorf("service error"))
 	})
 }
 
-func getAllVariant_Error(t *testing.T, url string, mocker func(*mocking.MockGetAllService)) {
+func getAllVariant_Error(t *testing.T, url string, mocker func(*mocking.MockReaderService)) {
 	// given
 	ctrl := gomock.NewController(t)
 
@@ -65,7 +65,7 @@ func getAllVariant_Error(t *testing.T, url string, mocker func(*mocking.MockGetA
 	req, err := http.NewRequest("GET", url, nil)
 	assert.Nil(t, err, "could not create request")
 
-	svc := mocking.NewMockGetAllService(ctrl)
+	svc := mocking.NewMockReaderService(ctrl)
 	mocker(svc)
 	_, r := newTestApiResource(svc)
 
@@ -78,18 +78,18 @@ func getAllVariant_Error(t *testing.T, url string, mocker func(*mocking.MockGetA
 }
 
 func TestGetAll_Success(t *testing.T) {
-	getAllVariant_Success(t, rootUrl+"/test", func(m *mocking.MockGetAllService, expectedList interface{}) {
-		m.EXPECT().GetAll(goContextMatcher()).Return(expectedList, nil)
+	getAllVariant_Success(t, rootUrl+"/test", func(m *mocking.MockReaderService, expectedList interface{}) {
+		m.EXPECT().GetAll(matchers.GoContext()).Return(expectedList, nil)
 	})
 }
 
 func TestGetAll_Paged_Success(t *testing.T) {
-	getAllVariant_Success(t, rootUrl+"/test?page=1", func(m *mocking.MockGetAllService, expectedList interface{}) {
-		m.EXPECT().GetAllPaged(goContextMatcher(), uint(20), uint64(0)).Return(expectedList, nil)
+	getAllVariant_Success(t, rootUrl+"/test?page=1", func(m *mocking.MockReaderService, expectedList interface{}) {
+		m.EXPECT().GetAllPaged(matchers.GoContext(), uint(20), uint64(0)).Return(expectedList, nil)
 	})
 }
 
-func getAllVariant_Success(t *testing.T, url string, mocker func(*mocking.MockGetAllService, interface{})) {
+func getAllVariant_Success(t *testing.T, url string, mocker func(*mocking.MockReaderService, interface{})) {
 	// given
 	ctrl := gomock.NewController(t)
 
@@ -102,7 +102,7 @@ func getAllVariant_Success(t *testing.T, url string, mocker func(*mocking.MockGe
 	req, err := http.NewRequest("GET", url, nil)
 	assert.Nil(t, err, "could not create request")
 
-	svc := mocking.NewMockGetAllService(ctrl)
+	svc := mocking.NewMockReaderService(ctrl)
 	mocker(svc, expectedList)
 	_, r := newTestApiResource(svc)
 
@@ -145,8 +145,8 @@ func TestGetById_InvalidId_Error(t *testing.T) {
 	req, err := http.NewRequest("GET", rootUrl+"/test/garbage", nil)
 	assert.Nil(t, err, "could not create request")
 
-	svc := mocking.NewMockGetByIdService(ctrl)
-	svc.EXPECT().GetById(goContextMatcher(), gomock.Any()).Times(0)
+	svc := mocking.NewMockReaderService(ctrl)
+	svc.EXPECT().GetById(matchers.GoContext(), gomock.Any()).Times(0)
 
 	_, r := newTestApiResource(svc)
 
@@ -166,8 +166,8 @@ func TestGetById_Error(t *testing.T) {
 	req, err := http.NewRequest("GET", rootUrl+"/test/"+strconv.FormatUint(id, 10), nil)
 	assert.Nil(t, err, "could not create request")
 
-	svc := mocking.NewMockGetByIdService(ctrl)
-	svc.EXPECT().GetById(goContextMatcher(), id).Times(1).Return(nil, fmt.Errorf("service error"))
+	svc := mocking.NewMockReaderService(ctrl)
+	svc.EXPECT().GetById(matchers.GoContext(), id).Times(1).Return(nil, fmt.Errorf("service error"))
 	_, r := newTestApiResource(svc)
 
 	// when
@@ -192,8 +192,8 @@ func TestGetById_Success(t *testing.T) {
 		Name: "Another One",
 	}
 
-	svc := mocking.NewMockGetByIdService(ctrl)
-	svc.EXPECT().GetById(goContextMatcher(), id).Times(1).Return(expected, nil)
+	svc := mocking.NewMockReaderService(ctrl)
+	svc.EXPECT().GetById(matchers.GoContext(), id).Times(1).Return(expected, nil)
 	_, r := newTestApiResource(svc)
 
 	// when
@@ -229,8 +229,8 @@ func TestCreate_EmptyRequest_Error(t *testing.T) {
 
 	var te TestEntity
 
-	svc := mocking.NewMockCreateService(ctrl)
-	svc.EXPECT().Create(goContextMatcher(), gomock.Any()).
+	svc := mocking.NewMockCreatorService(ctrl)
+	svc.EXPECT().Create(matchers.GoContext(), gomock.Any()).
 		Times(1).
 		DoAndReturn(func(ctx context.Context, binding services.ObjectBinder) error {
 			return binding.BindTo(&te)
@@ -264,8 +264,8 @@ func TestCreate_Success(t *testing.T) {
 
 	var created TestEntity
 
-	svc := mocking.NewMockCreateService(ctrl)
-	svc.EXPECT().Create(goContextMatcher(), gomock.Any()).
+	svc := mocking.NewMockCreatorService(ctrl)
+	svc.EXPECT().Create(matchers.GoContext(), gomock.Any()).
 		Times(1).
 		DoAndReturn(func(ctx context.Context, binding services.ObjectBinder) error {
 			return binding.BindTo(&created)
@@ -294,8 +294,8 @@ func TestUpdate_InvalidId_Error(t *testing.T) {
 	req, err := http.NewRequest("PUT", rootUrl+"/test/garbage", nil)
 	assert.Nil(t, err, "could not create request")
 
-	svc := mocking.NewMockUpdateService(ctrl)
-	svc.EXPECT().Update(goContextMatcher(), gomock.Any(), gomock.Any()).Times(0)
+	svc := mocking.NewMockUpdaterService(ctrl)
+	svc.EXPECT().Update(matchers.GoContext(), gomock.Any(), gomock.Any()).Times(0)
 	_, r := newTestApiResource(svc)
 
 	// when
@@ -316,8 +316,8 @@ func TestUpdate_EmptyRequest_Error(t *testing.T) {
 
 	var te TestEntity
 
-	svc := mocking.NewMockUpdateService(ctrl)
-	svc.EXPECT().Update(goContextMatcher(), gomock.Eq(id), gomock.Any()).
+	svc := mocking.NewMockUpdaterService(ctrl)
+	svc.EXPECT().Update(matchers.GoContext(), gomock.Eq(id), gomock.Any()).
 		Times(1).
 		DoAndReturn(func(ctx context.Context, id uint64, binding services.ObjectBinder) error {
 			return binding.BindTo(&te)
@@ -355,8 +355,8 @@ func TestUpdate_Success(t *testing.T) {
 		Name: "Current Name",
 	}
 
-	svc := mocking.NewMockUpdateService(ctrl)
-	svc.EXPECT().Update(goContextMatcher(), gomock.Eq(id), gomock.Any()).
+	svc := mocking.NewMockUpdaterService(ctrl)
+	svc.EXPECT().Update(matchers.GoContext(), gomock.Eq(id), gomock.Any()).
 		Times(1).
 		DoAndReturn(func(ctx context.Context, id uint64, binding services.ObjectBinder) error {
 			return binding.BindTo(&existing)
@@ -399,12 +399,4 @@ func newTestApiResource(svc interface{}) (ApiResource, *chi.Mux) {
 	r := chi.NewRouter()
 	Register(r, api)
 	return api, r
-}
-
-func goContextMatcher() gomock.Matcher {
-	return gomock.AssignableToTypeOf(goContextType())
-}
-
-func goContextType() reflect.Type {
-	return reflect.TypeOf((*context.Context)(nil)).Elem()
 }

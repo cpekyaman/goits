@@ -1,50 +1,49 @@
 package project
 
 import (
-	"github.com/cpekyaman/goits/framework/orm"
+	"github.com/cpekyaman/goits/framework/orm/domain"
 	"github.com/cpekyaman/goits/framework/validation"
 )
 
 const (
 	projectTypeName       = "project.Project"
 	projectStatusTypeName = "project.ProjectStatus"
+	projectTypeTypeName   = "project.ProjectType"
 )
 
-func init() {
+func initDomain() {
 	registerProjectValidations()
 }
 
+type ProjectType struct {
+	domain.VersionedEntity
+	Name        string `json:"name" db:"name"`
+	Description string `json:"desc" db:"description"`
+}
+
 type ProjectStatus struct {
-	orm.VersionedEntity
+	domain.VersionedEntity
 	Name        string `json:"name" db:"name"`
 	Description string `json:"desc" db:"description"`
 }
 
 type Project struct {
-	orm.VersionedTimeStampedEntity
+	domain.VersionedTimeStampedEntity
 	Name        string `json:"name" db:"name"`
 	Description string `json:"desc" db:"description"`
+	Type        uint64 `json:"type" db:"type"`
 	Status      uint64 `json:"status" db:"status"`
 }
 
 func registerProjectValidations() {
 	sv := validation.Struct(projectTypeName)
 
-	sv.Field("name").
-		With(validation.NotBlank(), validation.Pattern(validation.PatternAlNum)).
-		Field("description").
-		With(validation.NotBlank(), validation.Pattern(validation.PatternAlNum))
-}
-
-func applyProjectValidations(vc *validation.ValidationContext, p Project) error {
-	vc.
-		Validate("id", p.Id).
-		Validate("name", p.Name).
-		Validate("description", p.Description)
-
-	return vc.Errors()
+	sv.WithMandatoryName().
+		WithMandatoryDesc().
+		Field("type").With(validation.ValidId()).
+		Field("status").With(validation.ValidId())
 }
 
 func NewProject() *Project {
-	return &Project{orm.VersionedTimeStampedEntity{}, "", "", 0}
+	return &Project{domain.VersionedTimeStampedEntity{}, "", "", 0, 0}
 }
